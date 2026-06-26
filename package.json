@@ -1,0 +1,7 @@
+{
+	"name": "colabourhood",
+	"private": true,
+	"dependencies": {
+		"leaflet": "1.9.4"
+	}
+}

@@ -1,0 +1,15 @@
+node_modules/
+.chrome-qa/
+.edge-qa/
+
+.env
+.env.*
+
+dist/
+build/
+.next/
+coverage/
+
+*.log
+Thumbs.db
+.DS_Store
