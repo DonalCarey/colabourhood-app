@@ -11,10 +11,11 @@ const NEIGHBOURHOOD_BOUNDS = [
   [52.6477796, -8.6313332],
 ];
 const TILE_URL = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
+const PILOT_NEIGHBOURHOOD_NAME = "Ballinacurra Gardens";
 
-let projects = [
+const DEMO_PROJECTS = [
   {
-    id: 1,
+    id: "demo-1",
     slug: "safer-crossing-ballinacurra-gardens",
     scope: "place",
     title: "A safer crossing on Ballinacurra Gardens",
@@ -28,7 +29,7 @@ let projects = [
     lng: -8.63546,
   },
   {
-    id: 2,
+    id: "demo-2",
     slug: "community-tool-library",
     scope: "place",
     title: "Community tool library",
@@ -42,7 +43,7 @@ let projects = [
     lng: -8.63438,
   },
   {
-    id: 3,
+    id: "demo-3",
     slug: "spring-street-clean-up",
     scope: "place",
     title: "Spring street clean-up",
@@ -56,7 +57,7 @@ let projects = [
     lng: -8.63672,
   },
   {
-    id: 4,
+    id: "demo-4",
     slug: "play-space-for-younger-children",
     scope: "place",
     title: "A play space for younger children",
@@ -70,7 +71,7 @@ let projects = [
     lng: -8.63712,
   },
   {
-    id: 5,
+    id: "demo-5",
     slug: "bulk-buy-home-energy-upgrades",
     scope: "neighbourhood",
     title: "Bulk-buy home energy upgrades",
@@ -83,7 +84,9 @@ let projects = [
   },
 ];
 
-let selectedId = 1;
+let liveProjects = [];
+let projects = [...DEMO_PROJECTS];
+let selectedId = "demo-1";
 let currentFilter = "all";
 let placing = false;
 let pendingLocation = null;
@@ -95,7 +98,7 @@ let currentUser = null;
 let currentProfile = null;
 let neighbourhoods = [];
 
-const supabase = window.COLABOURHOOD_SUPABASE;
+const supabaseClient = window.COLABOURHOOD_SUPABASE;
 const FALLBACK_NEIGHBOURHOODS = [
   { id: "", name: "Ballinacurra Gardens" },
   { id: "", name: "Corbally" },
@@ -159,10 +162,190 @@ function visibleProjects() {
     : projects.filter((project) => project.status === currentFilter);
 }
 
+function appStatusFromDatabase(status) {
+  return {
+    proposed: "proposed",
+    gathering_support: "gathering",
+    planning: "ready",
+    active: "ready",
+    completed: "completed",
+    paused: "proposed",
+    removed: "proposed",
+  }[status] || "proposed";
+}
+
+function databaseStatusFromApp(status) {
+  return {
+    proposed: "proposed",
+    gathering: "gathering_support",
+    ready: "active",
+    completed: "completed",
+  }[status] || "proposed";
+}
+
+function scopeFromDatabase(type) {
+  return type === "neighbourhood_wide" ? "neighbourhood" : "place";
+}
+
+function typeFromScope(scope) {
+  return scope === "neighbourhood" ? "neighbourhood_wide" : "location_based";
+}
+
+function shortTitle(title) {
+  return title.length > 22 ? `${title.slice(0, 21)}…` : title;
+}
+
+function activeNeighbourhood() {
+  return (
+    neighbourhoods.find((neighbourhood) => neighbourhood.id === currentProfile?.neighbourhood_id) ||
+    neighbourhoods.find((neighbourhood) => neighbourhood.name === PILOT_NEIGHBOURHOOD_NAME) ||
+    null
+  );
+}
+
+function activeNeighbourhoodName() {
+  return activeNeighbourhood()?.name || PILOT_NEIGHBOURHOOD_NAME;
+}
+
+function liveProjectFromRow(row, supportCount = 0) {
+  const scope = scopeFromDatabase(row.project_type);
+  const neighbourhood = neighbourhoods.find((item) => item.id === row.neighbourhood_id);
+  return {
+    id: row.id,
+    isLive: true,
+    scope,
+    title: row.title,
+    shortTitle: shortTitle(row.title),
+    location:
+      scope === "neighbourhood"
+        ? `Across ${neighbourhood?.name || activeNeighbourhoodName()}`
+        : row.location_label || neighbourhood?.name || activeNeighbourhoodName(),
+    status: appStatusFromDatabase(row.status),
+    neighbours: Math.max(1, supportCount || 0),
+    description: row.description,
+    ...(scope === "place"
+      ? { lat: Number(row.location_lat), lng: Number(row.location_lng) }
+      : {}),
+  };
+}
+
+function syncProjectCollection() {
+  const neighbourhood = activeNeighbourhoodName();
+  const demoProjects = neighbourhood === PILOT_NEIGHBOURHOOD_NAME ? DEMO_PROJECTS : [];
+  projects = [...demoProjects, ...liveProjects];
+
+  const projectIds = new Set(projects.map((project) => project.id));
+  markers.forEach((marker, id) => {
+    if (!projectIds.has(id)) {
+      map.removeLayer(marker);
+      markers.delete(id);
+    }
+  });
+
+  if (!projects.some((project) => project.id === selectedId)) {
+    selectedId = projects[0]?.id || null;
+  }
+}
+
+async function loadLiveProjects() {
+  const neighbourhood = activeNeighbourhood();
+  if (!supabaseClient || !neighbourhood?.id) {
+    liveProjects = [];
+    syncProjectCollection();
+    render();
+    return;
+  }
+
+  const { data, error } = await supabaseClient
+    .from("projects")
+    .select("id, neighbourhood_id, created_by, title, summary, description, project_type, status, location_lat, location_lng, location_label, created_at")
+    .eq("neighbourhood_id", neighbourhood.id)
+    .eq("is_hidden", false)
+    .neq("status", "removed")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    showToast("Could not load live projects yet.");
+    return;
+  }
+
+  const rows = data || [];
+  const ids = rows.map((row) => row.id);
+  let supportCounts = new Map();
+
+  if (ids.length) {
+    const { data: contributions } = await supabaseClient
+      .from("project_contributions")
+      .select("project_id")
+      .in("project_id", ids)
+      .eq("contribution_type", "support");
+
+    supportCounts = new Map();
+    (contributions || []).forEach((contribution) => {
+      supportCounts.set(contribution.project_id, (supportCounts.get(contribution.project_id) || 0) + 1);
+    });
+  }
+
+  liveProjects = rows.map((row) => liveProjectFromRow(row, supportCounts.get(row.id)));
+  syncProjectCollection();
+  render();
+}
+
+async function saveLiveProject(project) {
+  const neighbourhood = activeNeighbourhood();
+  if (!supabaseClient || !currentUser || !currentProfile || !neighbourhood?.id) {
+    throw new Error("Sign in and choose a neighbourhood before proposing a project.");
+  }
+
+  const payload = {
+    neighbourhood_id: neighbourhood.id,
+    created_by: currentUser.id,
+    title: project.title,
+    summary: project.description.slice(0, 180),
+    description: project.description,
+    project_type: typeFromScope(project.scope),
+    status: databaseStatusFromApp(project.status),
+    location_label: project.location,
+    location_lat: project.scope === "place" ? project.lat : null,
+    location_lng: project.scope === "place" ? project.lng : null,
+  };
+
+  const { data, error } = await supabaseClient.from("projects").insert(payload).select().single();
+  if (error) throw error;
+
+  await supabaseClient.from("project_contributions").insert({
+    project_id: data.id,
+    user_id: currentUser.id,
+    contribution_type: "support",
+    note: "Project proposer",
+    is_public: true,
+  });
+
+  return data;
+}
+
+async function supportLiveProject(project) {
+  if (!supabaseClient || !currentUser || !project?.isLive) return false;
+
+  const { error } = await supabaseClient.from("project_contributions").upsert(
+    {
+      project_id: project.id,
+      user_id: currentUser.id,
+      contribution_type: "support",
+      is_public: true,
+    },
+    { onConflict: "project_id,user_id,contribution_type" }
+  );
+
+  if (error) throw error;
+  return true;
+}
+
 function markerHtml(project, isSelected = false) {
   const sizeClass = isSelected ? " is-selected" : "";
+  const status = STATUS[project.status] || STATUS.proposed;
   return `
-    <div class="leaflet-project-marker${sizeClass}" style="--status:${STATUS[project.status].color}">
+    <div class="leaflet-project-marker${sizeClass}" style="--status:${status.color}">
       <span class="leaflet-pin-label">${project.shortTitle}</span>
       <svg viewBox="0 0 42 52" aria-hidden="true">
         <path d="M21 50S39 35.2 39 19.5a18 18 0 1 0-36 0C3 35.2 21 50 21 50Z"/>
@@ -187,11 +370,11 @@ function renderList() {
         .map(
           (project) => `
             <button class="project-row ${project.id === selectedId ? "selected" : ""}"
-              style="--status:${STATUS[project.status].color}" data-project="${project.id}">
+              style="--status:${(STATUS[project.status] || STATUS.proposed).color}" data-project="${project.id}">
               <span class="status-dot"></span>
               <span>
                 <strong>${project.title}</strong>
-                <small>${project.neighbours} neighbours · ${STATUS[project.status].label}${project.scope === "neighbourhood" ? " · Neighbourhood-wide" : ""}</small>
+                <small>${project.neighbours} neighbours · ${(STATUS[project.status] || STATUS.proposed).label}${project.scope === "neighbourhood" ? " · Neighbourhood-wide" : ""}</small>
               </span>
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
             </button>`
@@ -229,11 +412,11 @@ function renderNeighbourhoodProjects() {
     .map(
       (project) => `
         <button class="neighbourhood-project-button ${project.id === selectedId ? "selected" : ""}"
-          style="--status:${STATUS[project.status].color}" data-project="${project.id}">
+          style="--status:${(STATUS[project.status] || STATUS.proposed).color}" data-project="${project.id}">
           <span class="area-symbol">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8.5 12 4l8 4.5v9L12 22l-8-4.5v-9Z"/><path d="m4 8.5 8 4.5 8-4.5M12 13v9"/></svg>
           </span>
-          <span><strong>${project.title}</strong><small>Across Ballinacurra Gardens · ${project.neighbours} involved</small></span>
+          <span><strong>${project.title}</strong><small>Across ${activeNeighbourhoodName()} · ${project.neighbours} involved</small></span>
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
         </button>`
     )
@@ -247,10 +430,20 @@ function renderDrawer() {
     return;
   }
   drawer.hidden = false;
-  drawer.style.setProperty("--status", STATUS[project.status].color);
+  const status = STATUS[project.status] || STATUS.proposed;
+  const projectPageAction = project.slug
+    ? `<a class="button open-project-button" href="./projects/${project.slug}/index.html">
+      Open project
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+    </a>`
+    : `<button class="button open-project-button" type="button" disabled>
+      Project page coming next
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+    </button>`;
+  drawer.style.setProperty("--status", status.color);
   drawer.innerHTML = `
     <div class="drawer-topline">
-      <span class="status-label"><i class="status-dot"></i>${STATUS[project.status].label}</span>
+      <span class="status-label"><i class="status-dot"></i>${status.label}</span>
       <button class="drawer-close" aria-label="Close project details">×</button>
     </div>
     <h2>${project.title}</h2>
@@ -275,10 +468,7 @@ function renderDrawer() {
       <button class="button button-dark" data-action="join">Join this project</button>
       <button class="button button-light" data-action="offer">Offer help</button>
     </div>
-    <a class="button open-project-button" href="./projects/${project.slug}/index.html">
-      Open project
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
-    </a>`;
+    ${projectPageAction}`;
 }
 
 function render() {
@@ -295,7 +485,7 @@ function render() {
 }
 
 function selectProject(id) {
-  selectedId = Number(id);
+  selectedId = id;
   mobileDrawerOpen = true;
   cancelLocationChoice();
   render();
@@ -310,7 +500,6 @@ function selectProject(id) {
 function openScopeChoice() {
   if (!currentUser) {
     openAccountModal();
-    showToast("Create an account before proposing a project.");
     return;
   }
   scopeModal.hidden = false;
@@ -340,7 +529,7 @@ function beginNeighbourhoodProject() {
   cancelLocationChoice();
   formStep.textContent = "New project · neighbourhood-wide";
   modalTitle.textContent = "What could neighbours do together?";
-  chosenLocation.lastChild.textContent = " Across Ballinacurra Gardens";
+  chosenLocation.lastChild.textContent = ` Across ${activeNeighbourhoodName()}`;
   modal.hidden = false;
   form.querySelector("input").focus();
 }
@@ -384,13 +573,13 @@ function renderNeighbourhoodOptions() {
 }
 
 async function loadNeighbourhoods() {
-  if (!supabase) {
+  if (!supabaseClient) {
     neighbourhoods = FALLBACK_NEIGHBOURHOODS;
     renderNeighbourhoodOptions();
     return;
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await supabaseClient
     .from("neighbourhoods")
     .select("id, name")
     .eq("city", "Limerick")
@@ -407,8 +596,8 @@ async function loadNeighbourhoods() {
 }
 
 async function loadProfile(userId) {
-  if (!supabase || !userId) return null;
-  const { data, error } = await supabase
+  if (!supabaseClient || !userId) return null;
+  const { data, error } = await supabaseClient
     .from("profiles")
     .select("id, display_name, neighbourhood_id, verification_status")
     .eq("id", userId)
@@ -448,12 +637,12 @@ function setAuthMode(mode) {
 }
 
 async function refreshSession() {
-  if (!supabase) {
+  if (!supabaseClient) {
     renderAccountState();
     return;
   }
 
-  const { data } = await supabase.auth.getSession();
+  const { data } = await supabaseClient.auth.getSession();
   currentUser = data.session?.user || null;
   currentProfile = currentUser ? await loadProfile(currentUser.id) : null;
   renderAccountState();
@@ -484,7 +673,7 @@ function openProjectForm(latlng) {
   proposalScope = "place";
   pendingLocation = latlng;
   pendingMarker = L.marker(latlng, { icon: pendingIcon(), interactive: false }).addTo(map);
-  chosenLocation.lastChild.textContent = ` ${latlng.lat.toFixed(5)}, ${latlng.lng.toFixed(5)} · Ballinacurra Gardens`;
+  chosenLocation.lastChild.textContent = ` ${latlng.lat.toFixed(5)}, ${latlng.lng.toFixed(5)} · ${activeNeighbourhoodName()}`;
   formStep.textContent = "New project · location chosen";
   modalTitle.textContent = "What should happen here?";
   placing = false;
@@ -494,7 +683,29 @@ function openProjectForm(latlng) {
   form.querySelector("input").focus();
 }
 
-document.addEventListener("click", (event) => {
+document.addEventListener("click", async (event) => {
+  const joinAction = event.target.closest('[data-action="join"]');
+  if (joinAction && currentUser) {
+    const project = projects.find((item) => item.id === selectedId);
+    if (!project || joinAction.dataset.joined) return;
+
+    joinAction.disabled = true;
+    try {
+      await supportLiveProject(project);
+      project.neighbours += 1;
+      joinAction.dataset.joined = "true";
+      joinAction.textContent = "You’ve joined";
+      showToast("You’re now part of this project.");
+      renderList();
+      if (project.isLive) await loadLiveProjects();
+    } catch (error) {
+      showToast(error.message || "Could not join this project yet.");
+    } finally {
+      joinAction.disabled = false;
+    }
+    return;
+  }
+
   const projectControl = event.target.closest("[data-project]");
   if (projectControl) selectProject(projectControl.dataset.project);
 
@@ -564,8 +775,8 @@ document.querySelector("#modal-back").addEventListener("click", openScopeChoice)
 document.querySelector("#account-button").addEventListener("click", openAccountModal);
 document.querySelector("#account-close").addEventListener("click", () => (accountModal.hidden = true));
 document.querySelector("#sign-out-button").addEventListener("click", async () => {
-  if (!supabase) return;
-  await supabase.auth.signOut();
+  if (!supabaseClient) return;
+  await supabaseClient.auth.signOut();
   currentUser = null;
   currentProfile = null;
   renderAccountState();
@@ -579,7 +790,7 @@ document.querySelectorAll("[data-auth-mode]").forEach((button) => {
 
 accountForm.addEventListener("submit", async (event) => {
   event.preventDefault();
-  if (!supabase) {
+  if (!supabaseClient) {
     showToast("Supabase is not available yet. Check your internet connection.");
     return;
   }
@@ -601,7 +812,7 @@ accountForm.addEventListener("submit", async (event) => {
       return;
     }
 
-    const { data: signupData, error } = await supabase.auth.signUp({
+    const { data: signupData, error } = await supabaseClient.auth.signUp({
       email,
       password,
       options: {
@@ -617,11 +828,12 @@ accountForm.addEventListener("submit", async (event) => {
     } else {
       currentUser = signupData.user || null;
       if (signupData.session && currentUser) {
-        await supabase
+        await supabaseClient
           .from("profiles")
           .update({ display_name: displayName, neighbourhood_id: neighbourhoodId })
           .eq("id", currentUser.id);
         currentProfile = await loadProfile(currentUser.id);
+        await loadLiveProjects();
         showToast("Your Colabourhood account is ready.");
       } else {
         showToast("Check your email to confirm your account.");
@@ -630,12 +842,13 @@ accountForm.addEventListener("submit", async (event) => {
       renderAccountState();
     }
   } else {
-    const { data: signinData, error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data: signinData, error } = await supabaseClient.auth.signInWithPassword({ email, password });
     if (error) {
       showToast(error.message);
     } else {
       currentUser = signinData.user;
       currentProfile = await loadProfile(currentUser.id);
+      await loadLiveProjects();
       accountForm.reset();
       accountModal.hidden = true;
       renderAccountState();
@@ -651,12 +864,62 @@ map.on("click", (event) => {
   if (placing) openProjectForm(event.latlng);
 });
 
-form.addEventListener("submit", (event) => {
+form.addEventListener("submit", async (event) => {
   event.preventDefault();
+  if (!currentUser) {
+    openAccountModal();
+    showToast("Sign in before proposing a project.");
+    return;
+  }
+
+  const submitButton = form.querySelector('button[type="submit"]');
   const data = new FormData(form);
   const title = data.get("title").trim();
   const description = data.get("description").trim();
   const location = pendingLocation || L.latLng(NEIGHBOURHOOD_CENTER);
+
+  const liveProjectDraft = {
+    id: `pending-${Date.now()}`,
+    scope: proposalScope,
+    title,
+    shortTitle: shortTitle(title),
+    location: proposalScope === "neighbourhood" ? `Across ${activeNeighbourhoodName()}` : activeNeighbourhoodName(),
+    status: "proposed",
+    neighbours: 1,
+    description,
+    ...(proposalScope === "place" ? { lat: location.lat, lng: location.lng } : {}),
+  };
+
+  submitButton.disabled = true;
+  submitButton.textContent = "Saving…";
+
+  try {
+    const savedProject = await saveLiveProject(liveProjectDraft);
+    selectedId = savedProject.id;
+    currentFilter = "all";
+    document.querySelectorAll(".filter").forEach((button) =>
+      button.classList.toggle("active", button.dataset.filter === "all")
+    );
+    form.reset();
+    modal.hidden = true;
+    if (pendingMarker) map.removeLayer(pendingMarker);
+    pendingMarker = null;
+    pendingLocation = null;
+    await loadLiveProjects();
+    if (liveProjectDraft.scope === "neighbourhood") {
+      map.fitBounds(NEIGHBOURHOOD_BOUNDS, { padding: [28, 28] });
+    } else {
+      map.panTo([liveProjectDraft.lat, liveProjectDraft.lng]);
+    }
+    showToast("Your proposed project is now saved on the neighbourhood map.");
+  } catch (error) {
+    showToast(error.message || "Could not save this project yet.");
+  } finally {
+    submitButton.disabled = false;
+    submitButton.textContent = "Continue";
+  }
+  return;
+
   const project = {
     id: Date.now(),
     scope: proposalScope,
@@ -710,11 +973,13 @@ async function initApp() {
   render();
   await loadNeighbourhoods();
   await refreshSession();
-  if (supabase) {
-    supabase.auth.onAuthStateChange(async (_event, session) => {
+  await loadLiveProjects();
+  if (supabaseClient) {
+    supabaseClient.auth.onAuthStateChange(async (_event, session) => {
       currentUser = session?.user || null;
       currentProfile = currentUser ? await loadProfile(currentUser.id) : null;
       renderAccountState();
+      await loadLiveProjects();
     });
   }
 }

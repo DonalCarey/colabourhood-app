@@ -223,6 +223,12 @@ h1, h2 { font-family: "Newsreader", Georgia, serif; letter-spacing: -.025em; }
   background: white;
   text-decoration: none;
 }
+.open-project-button:disabled {
+  cursor: not-allowed;
+  opacity: .72;
+  transform: none;
+  box-shadow: none;
+}
 
 .modal-backdrop { position: fixed; z-index: 50; inset: 0; display: grid; place-items: center; padding: 20px; background: rgba(16,37,31,.48); backdrop-filter: blur(3px); }
 .modal-backdrop[hidden] { display: none; }
