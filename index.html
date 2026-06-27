@@ -31,6 +31,11 @@
           <a href="#neighbourhood">Neighbourhood</a>
         </nav>
 
+        <button class="account-button" id="account-button" type="button">
+          <span class="account-status-dot"></span>
+          <span id="account-label">Sign in</span>
+        </button>
+
         <button class="button button-dark" id="header-propose">
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M12 5v14M5 12h14" />
@@ -136,8 +141,59 @@
       </section>
     </div>
 
+    <div class="modal-backdrop" id="account-modal" hidden>
+      <section class="project-modal account-modal" role="dialog" aria-modal="true" aria-labelledby="account-title">
+        <button class="modal-close" id="account-close" aria-label="Close">×</button>
+        <p class="modal-step">Your account</p>
+        <h2 id="account-title">Join your neighbourhood</h2>
+        <p class="account-intro">
+          Choose your Limerick neighbourhood now. Residency verification can happen later when a project needs a stronger decision.
+        </p>
+
+        <div class="auth-tabs" role="tablist" aria-label="Account options">
+          <button class="auth-tab active" type="button" data-auth-mode="signup">Create account</button>
+          <button class="auth-tab" type="button" data-auth-mode="signin">Sign in</button>
+        </div>
+
+        <form id="account-form">
+          <label data-signup-only>
+            Display name
+            <input name="display_name" autocomplete="name" placeholder="e.g. Donal" />
+          </label>
+          <label data-signup-only>
+            Neighbourhood
+            <select name="neighbourhood_id" id="neighbourhood-select">
+              <option value="">Loading Limerick neighbourhoods…</option>
+            </select>
+          </label>
+          <label>
+            Email
+            <input name="email" type="email" required autocomplete="email" placeholder="you@example.com" />
+          </label>
+          <label>
+            Password
+            <input name="password" type="password" required autocomplete="current-password" minlength="6" />
+          </label>
+          <p class="privacy-note" data-signup-only>
+            Your exact address is not shown. Utility bills or proof-of-address documents should only be requested later if verification is needed.
+          </p>
+          <div class="form-actions">
+            <button type="submit" class="button button-dark" id="account-submit">Create account</button>
+          </div>
+        </form>
+
+        <div class="signed-in-panel" id="signed-in-panel" hidden>
+          <p class="signed-in-name" id="signed-in-name"></p>
+          <p class="signed-in-meta" id="signed-in-meta"></p>
+          <button class="button button-light" id="sign-out-button" type="button">Sign out</button>
+        </div>
+      </section>
+    </div>
+
     <div class="toast" id="toast" role="status" hidden></div>
     <script src="./vendor/leaflet/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="./supabase-client.js"></script>
     <script src="./app.js"></script>
   </body>
 </html>

@@ -90,6 +90,22 @@ let pendingLocation = null;
 let pendingMarker = null;
 let proposalScope = "place";
 let mobileDrawerOpen = window.innerWidth > 760;
+let authMode = "signup";
+let currentUser = null;
+let currentProfile = null;
+let neighbourhoods = [];
+
+const supabase = window.COLABOURHOOD_SUPABASE;
+const FALLBACK_NEIGHBOURHOODS = [
+  { id: "", name: "Ballinacurra Gardens" },
+  { id: "", name: "Corbally" },
+  { id: "", name: "Castletroy" },
+  { id: "", name: "Dooradoyle" },
+  { id: "", name: "Raheen" },
+  { id: "", name: "City Centre" },
+  { id: "", name: "Thomondgate" },
+  { id: "", name: "Annacotty" },
+];
 
 const list = document.querySelector("#project-list");
 const drawer = document.querySelector("#detail-drawer");
@@ -103,6 +119,15 @@ const toast = document.querySelector("#toast");
 const chosenLocation = document.querySelector(".chosen-location");
 const formStep = document.querySelector("#form-step");
 const modalTitle = document.querySelector("#modal-title");
+const accountButton = document.querySelector("#account-button");
+const accountLabel = document.querySelector("#account-label");
+const accountModal = document.querySelector("#account-modal");
+const accountForm = document.querySelector("#account-form");
+const accountSubmit = document.querySelector("#account-submit");
+const neighbourhoodSelect = document.querySelector("#neighbourhood-select");
+const signedInPanel = document.querySelector("#signed-in-panel");
+const signedInName = document.querySelector("#signed-in-name");
+const signedInMeta = document.querySelector("#signed-in-meta");
 const markers = new Map();
 
 const map = L.map("leaflet-map", {
@@ -283,6 +308,11 @@ function selectProject(id) {
 }
 
 function openScopeChoice() {
+  if (!currentUser) {
+    openAccountModal();
+    showToast("Create an account before proposing a project.");
+    return;
+  }
   scopeModal.hidden = false;
   modal.hidden = true;
   cancelLocationChoice();
@@ -332,6 +362,109 @@ function showToast(message) {
   showToast.timeout = window.setTimeout(() => (toast.hidden = true), 2600);
 }
 
+function friendlyVerificationStatus(status) {
+  return {
+    unverified: "Residency not verified yet",
+    pending: "Residency verification pending",
+    verified: "Verified resident",
+    rejected: "Verification needs attention",
+  }[status || "unverified"];
+}
+
+function neighbourhoodName(id) {
+  return neighbourhoods.find((neighbourhood) => neighbourhood.id === id)?.name || "Neighbourhood not selected";
+}
+
+function renderNeighbourhoodOptions() {
+  const options = neighbourhoods.length ? neighbourhoods : FALLBACK_NEIGHBOURHOODS;
+  neighbourhoodSelect.innerHTML = [
+    `<option value="">Choose a Limerick neighbourhood</option>`,
+    ...options.map((neighbourhood) => `<option value="${neighbourhood.id}">${neighbourhood.name}</option>`),
+  ].join("");
+}
+
+async function loadNeighbourhoods() {
+  if (!supabase) {
+    neighbourhoods = FALLBACK_NEIGHBOURHOODS;
+    renderNeighbourhoodOptions();
+    return;
+  }
+
+  const { data, error } = await supabase
+    .from("neighbourhoods")
+    .select("id, name")
+    .eq("city", "Limerick")
+    .eq("is_active", true)
+    .order("name");
+
+  if (error) {
+    neighbourhoods = FALLBACK_NEIGHBOURHOODS;
+    showToast("Could not load live neighbourhoods yet.");
+  } else {
+    neighbourhoods = data || [];
+  }
+  renderNeighbourhoodOptions();
+}
+
+async function loadProfile(userId) {
+  if (!supabase || !userId) return null;
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, display_name, neighbourhood_id, verification_status")
+    .eq("id", userId)
+    .single();
+
+  if (error) return null;
+  return data;
+}
+
+function renderAccountState() {
+  accountButton.classList.toggle("signed-in", Boolean(currentUser));
+  accountLabel.textContent = currentProfile?.display_name || currentUser?.email?.split("@")[0] || "Sign in";
+
+  const isSignedIn = Boolean(currentUser);
+  accountForm.hidden = isSignedIn;
+  signedInPanel.hidden = !isSignedIn;
+
+  if (isSignedIn) {
+    signedInName.textContent = currentProfile?.display_name || currentUser.email;
+    signedInMeta.textContent = `${neighbourhoodName(currentProfile?.neighbourhood_id)} · ${friendlyVerificationStatus(
+      currentProfile?.verification_status
+    )}`;
+  }
+}
+
+function setAuthMode(mode) {
+  authMode = mode;
+  document.querySelectorAll("[data-auth-mode]").forEach((button) =>
+    button.classList.toggle("active", button.dataset.authMode === mode)
+  );
+  document.querySelectorAll("[data-signup-only]").forEach((element) => {
+    element.hidden = mode !== "signup";
+  });
+  accountSubmit.textContent = mode === "signup" ? "Create account" : "Sign in";
+  accountForm.querySelector('[name="password"]').autocomplete =
+    mode === "signup" ? "new-password" : "current-password";
+}
+
+async function refreshSession() {
+  if (!supabase) {
+    renderAccountState();
+    return;
+  }
+
+  const { data } = await supabase.auth.getSession();
+  currentUser = data.session?.user || null;
+  currentProfile = currentUser ? await loadProfile(currentUser.id) : null;
+  renderAccountState();
+}
+
+function openAccountModal() {
+  accountModal.hidden = false;
+  renderAccountState();
+  if (!currentUser) accountForm.querySelector('[name="email"]').focus();
+}
+
 function pendingIcon() {
   return L.divIcon({
     className: "project-marker-shell",
@@ -379,10 +512,22 @@ document.addEventListener("click", (event) => {
   }
 
   const contribution = event.target.closest("[data-contribution]");
-  if (contribution) contribution.classList.toggle("selected");
+  if (contribution) {
+    if (!currentUser) {
+      openAccountModal();
+      showToast("Sign in to offer help on a project.");
+      return;
+    }
+    contribution.classList.toggle("selected");
+  }
 
   const action = event.target.closest("[data-action]");
   if (action?.dataset.action === "join") {
+    if (!currentUser) {
+      openAccountModal();
+      showToast("Sign in to join this project.");
+      return;
+    }
     const project = projects.find((item) => item.id === selectedId);
     if (!action.dataset.joined) {
       project.neighbours += 1;
@@ -416,6 +561,91 @@ document.querySelector("#modal-close").addEventListener("click", () => {
   cancelLocationChoice();
 });
 document.querySelector("#modal-back").addEventListener("click", openScopeChoice);
+document.querySelector("#account-button").addEventListener("click", openAccountModal);
+document.querySelector("#account-close").addEventListener("click", () => (accountModal.hidden = true));
+document.querySelector("#sign-out-button").addEventListener("click", async () => {
+  if (!supabase) return;
+  await supabase.auth.signOut();
+  currentUser = null;
+  currentProfile = null;
+  renderAccountState();
+  accountModal.hidden = true;
+  showToast("You have signed out.");
+});
+
+document.querySelectorAll("[data-auth-mode]").forEach((button) => {
+  button.addEventListener("click", () => setAuthMode(button.dataset.authMode));
+});
+
+accountForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  if (!supabase) {
+    showToast("Supabase is not available yet. Check your internet connection.");
+    return;
+  }
+
+  const data = new FormData(accountForm);
+  const email = data.get("email").trim();
+  const password = data.get("password");
+  const displayName = data.get("display_name")?.trim();
+  const neighbourhoodId = data.get("neighbourhood_id");
+
+  accountSubmit.disabled = true;
+  accountSubmit.textContent = authMode === "signup" ? "Creating…" : "Signing in…";
+
+  if (authMode === "signup") {
+    if (!displayName || !neighbourhoodId) {
+      showToast("Add your name and choose your neighbourhood.");
+      accountSubmit.disabled = false;
+      accountSubmit.textContent = "Create account";
+      return;
+    }
+
+    const { data: signupData, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          display_name: displayName,
+          neighbourhood_id: neighbourhoodId,
+        },
+      },
+    });
+
+    if (error) {
+      showToast(error.message);
+    } else {
+      currentUser = signupData.user || null;
+      if (signupData.session && currentUser) {
+        await supabase
+          .from("profiles")
+          .update({ display_name: displayName, neighbourhood_id: neighbourhoodId })
+          .eq("id", currentUser.id);
+        currentProfile = await loadProfile(currentUser.id);
+        showToast("Your Colabourhood account is ready.");
+      } else {
+        showToast("Check your email to confirm your account.");
+      }
+      accountForm.reset();
+      renderAccountState();
+    }
+  } else {
+    const { data: signinData, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      showToast(error.message);
+    } else {
+      currentUser = signinData.user;
+      currentProfile = await loadProfile(currentUser.id);
+      accountForm.reset();
+      accountModal.hidden = true;
+      renderAccountState();
+      showToast("You are signed in.");
+    }
+  }
+
+  accountSubmit.disabled = false;
+  accountSubmit.textContent = authMode === "signup" ? "Create account" : "Sign in";
+});
 
 map.on("click", (event) => {
   if (placing) openProjectForm(event.latlng);
@@ -462,6 +692,7 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "Escape") {
     scopeModal.hidden = true;
     modal.hidden = true;
+    accountModal.hidden = true;
     cancelLocationChoice();
   }
 });
@@ -473,4 +704,19 @@ window.addEventListener("resize", () => {
 });
 
 window.setTimeout(() => map.invalidateSize(), 0);
-render();
+
+async function initApp() {
+  setAuthMode("signup");
+  render();
+  await loadNeighbourhoods();
+  await refreshSession();
+  if (supabase) {
+    supabase.auth.onAuthStateChange(async (_event, session) => {
+      currentUser = session?.user || null;
+      currentProfile = currentUser ? await loadProfile(currentUser.id) : null;
+      renderAccountState();
+    });
+  }
+}
+
+initApp();
