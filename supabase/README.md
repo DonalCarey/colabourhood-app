@@ -16,5 +16,6 @@ In Supabase, open **SQL Editor** and run these files in order:
 2. `seed.sql`
 3. `updates/001-profile-neighbourhood-from-signup.sql`
 4. `updates/002-project-editor-media-action-plan.sql`
+5. `updates/003-admin-reporting.sql`
 
 Do not paste or commit the Supabase `service_role` key. The browser app should only use the anon public key.

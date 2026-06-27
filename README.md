@@ -12,3 +12,5 @@ Projects support two geographic scopes:
 - Neighbourhood-wide projects appear as map overlays and highlight the Ballinacurra Gardens boundary, without assigning them a misleading point location.
 
 Each seeded project also has a stable detail page under `/projects/<project-slug>/`. These pages contain the overview, media, action plan, supporters, resource commitments, transparent funding ledger and chronological updates.
+
+Live Supabase project pages are opened through `live-project.html?id=<project-id>`. The basic moderation dashboard is at `admin.html`, and the public community rules page is at `rules.html`. To enable reporting and admin moderation in Supabase, run `supabase/updates/003-admin-reporting.sql`, then set `profiles.is_admin = true` for whichever confirmed account should review reports.

@@ -36,6 +36,7 @@ let needs = [];
 let mediaItems = [];
 let supported = false;
 let editorSchemaAvailable = true;
+let pendingReport = null;
 
 const icon = (name) => {
   const icons = {
@@ -291,6 +292,7 @@ function render() {
           <p>${supported ? "You are already supporting this project." : "Your support helps this project move to its next stage."}</p>
           <button class="stage-action" id="support-action">${supported ? "You support this" : "Support this idea"}</button>
           <button class="secondary-action" data-open-help>Offer help</button>
+          <button class="secondary-action subtle" data-report-type="project" data-report-id="${project.id}">Report project</button>
         </aside>
       </section>
 
@@ -360,6 +362,7 @@ function render() {
           ${renderOrganiserTools()}
           <div class="side-block"><span>Ways to contribute</span><div class="help-options">${["Time", "Skills", "Tools", "Funds"].map(type => `<button data-help="${type}">${type}</button>`).join("")}</div></div>
           <div class="side-block privacy-note"><span>Neighbour privacy</span><p>Support can be counted without showing personal details publicly.</p></div>
+          <div class="side-block"><span>Safety</span><p>If this project contains private information, abusive content, spam, or an unsafe proposal, report it for review.</p><button class="secondary-action" data-report-type="project" data-report-id="${project.id}">Report project</button></div>
         </aside>
       </div>
     </main>
@@ -367,6 +370,7 @@ function render() {
     <div class="project-modal-backdrop" id="help-modal" hidden><section class="project-dialog"><button class="dialog-close" aria-label="Close">×</button><h2>Offer help</h2><p>Choose what you can contribute. Funding is recorded as a pledge only; no payment is taken.</p><div class="dialog-options">${["Time","Skills","Tools","Funds"].map(type => `<button data-dialog-help="${type}">${type}</button>`).join("")}</div><button class="stage-action" id="save-help">Save my offer</button></section></div>
     <div class="project-modal-backdrop" id="pledge-modal" hidden><section class="project-dialog"><button class="dialog-close" aria-label="Close">×</button><h2>Record a pledge</h2><p>This records intent only. No money is collected.</p><label>Amount in euro<input id="pledge-amount" type="number" min="1" step="1" placeholder="25"></label><button class="stage-action compact" id="save-pledge">Save pledge</button></section></div>
     ${renderEditorModal()}
+    ${renderReportModal()}
     <div class="project-modal-backdrop" id="media-modal" hidden><section class="media-dialog"><button class="dialog-close" aria-label="Close">×</button><img alt="Expanded project media"></section></div>
     <div class="project-toast" role="status" hidden></div>
   `;
@@ -389,14 +393,15 @@ function renderMediaGallery() {
       <button class="media-main" data-media="${mainUrl}">
         <img src="${mainUrl}" alt="${escapeHtml(mainItem.caption || "Project photo")}">
         <span>${escapeHtml(mainItem.caption || "Project photo")}</span>
+        <em class="report-chip" data-report-type="media" data-report-id="${mainItem.id}">Report photo</em>
       </button>
       <div class="media-side">
         ${side.length
           ? side.map((item) => {
               const url = mediaUrl(item);
-              return `<button data-media="${url}"><img src="${url}" alt="${escapeHtml(item.caption || "Project photo")}"></button>`;
+              return `<button data-media="${url}"><img src="${url}" alt="${escapeHtml(item.caption || "Project photo")}"><em class="report-chip" data-report-type="media" data-report-id="${item.id}">Report</em></button>`;
             }).join("")
-          : `<button data-media="${mainUrl}"><img src="${mainUrl}" alt="${escapeHtml(mainItem.caption || "Project photo")}"></button>`}
+          : `<button data-media="${mainUrl}"><img src="${mainUrl}" alt="${escapeHtml(mainItem.caption || "Project photo")}"><em class="report-chip" data-report-type="media" data-report-id="${mainItem.id}">Report</em></button>`}
       </div>
     </div>
   `;
@@ -528,9 +533,37 @@ function renderMessages() {
   return messages.map((message) => `
     <article class="update">
       <time>${new Date(message.created_at).toLocaleDateString("en-IE", { day: "numeric", month: "short", year: "numeric" })}</time>
-      <div><span>${message.message_type}</span><h3>Neighbour update</h3><p>${escapeHtml(message.body)}</p><a href="#">${icon("paperclip")}Live Supabase record</a></div>
+      <div><span>${message.message_type}</span><h3>Neighbour update</h3><p>${escapeHtml(message.body)}</p><a href="#">${icon("paperclip")}Live Supabase record</a><button class="inline-report" data-report-type="message" data-report-id="${message.id}">Report update</button></div>
     </article>
   `).join("");
+}
+
+function renderReportModal() {
+  return `
+    <div class="project-modal-backdrop" id="report-modal" hidden>
+      <section class="project-dialog">
+        <button class="dialog-close" aria-label="Close">×</button>
+        <h2>Report content</h2>
+        <p>Reports help keep Colabourhood safe for neighbours. Admins can review and hide content if needed.</p>
+        <form id="report-form" class="live-report-form">
+          <label>Reason
+            <select name="reason" required>
+              <option value="inappropriate">Inappropriate content</option>
+              <option value="private_information">Personal/private information</option>
+              <option value="spam_duplicate">Spam or duplicate</option>
+              <option value="unsafe">Unsafe proposal</option>
+              <option value="abuse">Abusive behaviour</option>
+              <option value="other">Other</option>
+            </select>
+          </label>
+          <label>Details
+            <textarea name="details" rows="4" placeholder="Add context for the reviewer."></textarea>
+          </label>
+          <button class="stage-action" type="submit">Submit report</button>
+        </form>
+      </section>
+    </div>
+  `;
 }
 
 function initialisePage() {
@@ -575,6 +608,12 @@ function initialisePage() {
     modal.querySelector("img").src = button.dataset.media;
     modal.hidden = false;
   }));
+  document.querySelectorAll("[data-report-type]").forEach((button) => button.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    openReportModal(button.dataset.reportType, button.dataset.reportId);
+  }));
+  document.querySelector("#report-form")?.addEventListener("submit", submitReport);
   document.querySelector("#open-editor")?.addEventListener("click", () => document.querySelector("#editor-modal").hidden = false);
   document.querySelector("#editor-form")?.addEventListener("submit", saveEditorForm);
   document.querySelector("#add-action-row")?.addEventListener("click", () => {
@@ -656,6 +695,46 @@ async function savePledge() {
     toast("Your pledge has been recorded.");
   } catch (error) {
     toast(error.message || "Could not save your pledge yet.");
+  }
+}
+
+function openReportModal(targetType, targetId) {
+  if (!currentUser) {
+    toast("Sign in on the map page before reporting content.");
+    return;
+  }
+  pendingReport = { targetType, targetId };
+  document.querySelector("#report-modal").hidden = false;
+}
+
+async function submitReport(event) {
+  event.preventDefault();
+  if (!pendingReport || !currentUser) return;
+  const form = event.currentTarget;
+  const data = new FormData(form);
+  const submit = form.querySelector('button[type="submit"]');
+  submit.disabled = true;
+  submit.textContent = "Sending…";
+
+  try {
+    const { error } = await liveSupabase.from("content_reports").insert({
+      target_type: pendingReport.targetType,
+      target_id: pendingReport.targetId,
+      project_id: project.id,
+      reported_by: currentUser.id,
+      reason: data.get("reason"),
+      details: data.get("details")?.trim() || null,
+    });
+    if (error) throw error;
+    form.reset();
+    document.querySelector("#report-modal").hidden = true;
+    pendingReport = null;
+    toast("Report submitted for admin review.");
+  } catch (error) {
+    toast(error.message || "Could not submit this report yet.");
+  } finally {
+    submit.disabled = false;
+    submit.textContent = "Submit report";
   }
 }
 

@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Colabourhood admin dashboard for reports and moderation." />
+    <title>Admin · Colabourhood</title>
+    <link rel="icon" type="image/png" href="./assets/brand/colabourhood-logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Newsreader:opsz,wght@6..72,600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./admin.css" />
+  </head>
+  <body>
+    <header class="admin-header">
+      <a class="admin-brand" href="./index.html"><img src="./assets/brand/colabourhood-logo.png" alt="Colabourhood" /></a>
+      <nav>
+        <a href="./index.html">Map</a>
+        <a href="./rules.html">Community rules</a>
+      </nav>
+    </header>
+    <main id="admin-app">
+      <section class="admin-hero">
+        <p>Admin</p>
+        <h1>Reports and moderation</h1>
+        <span>Loading admin tools…</span>
+      </section>
+    </main>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="./supabase-client.js"></script>
+    <script src="./admin.js"></script>
+  </body>
+</html>
