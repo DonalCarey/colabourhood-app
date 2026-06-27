@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="A live Colabourhood project page powered by Supabase." />
+    <title>Project · Colabourhood</title>
+    <link rel="icon" type="image/png" href="./assets/brand/colabourhood-logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Newsreader:opsz,wght@6..72,600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./vendor/leaflet/leaflet.css" />
+    <link rel="stylesheet" href="./project.css" />
+    <link rel="stylesheet" href="./brand.css" />
+    <link rel="stylesheet" href="./live-project.css" />
+  </head>
+  <body>
+    <div id="live-project-app">
+      <header class="project-site-header">
+        <a class="project-brand" href="./index.html" aria-label="Colabourhood home">
+          <img src="./assets/brand/colabourhood-logo.png" alt="Colabourhood" />
+        </a>
+        <nav>
+          <a href="./index.html">Map</a>
+          <a class="active" href="./index.html#projects">Projects</a>
+          <a href="./index.html#neighbourhood">Neighbourhood</a>
+        </nav>
+        <a class="header-map-link" href="./index.html">Back to map</a>
+      </header>
+
+      <main class="live-loading">
+        <section class="project-hero">
+          <div class="project-hero-main">
+            <a class="back-link" href="./index.html">← Back to neighbourhood map</a>
+            <div class="project-status"><i></i>Loading project</div>
+            <h1>Loading this project…</h1>
+            <p class="project-objective">Fetching the live project details from Colabourhood.</p>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="./vendor/leaflet/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="./supabase-client.js"></script>
+    <script src="./live-project.js"></script>
+  </body>
+</html>

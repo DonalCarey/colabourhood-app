@@ -1,0 +1,85 @@
+.live-error {
+  max-width: 760px;
+  margin: 70px auto;
+  padding: 32px;
+  border: 1px solid var(--line);
+  background: #fff;
+  box-shadow: var(--shadow);
+}
+
+.live-error h1 {
+  margin: 0 0 12px;
+  font-size: 42px;
+}
+
+.live-action-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.live-message-form {
+  display: grid;
+  gap: 10px;
+  margin: 24px 0 28px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  background: #fff;
+}
+
+.live-message-form textarea {
+  width: 100%;
+  min-height: 110px;
+  resize: vertical;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+  color: var(--ink);
+  background: #fbfcfa;
+  font: inherit;
+  font-size: 13px;
+}
+
+.live-message-form textarea:focus {
+  outline: none;
+  border-color: var(--green);
+  box-shadow: 0 0 0 3px rgba(35, 91, 73, .1);
+}
+
+.live-message-form .stage-action {
+  width: max-content;
+  min-width: 150px;
+}
+
+.live-empty-state {
+  padding: 22px;
+  border: 1px dashed var(--line);
+  color: var(--muted);
+  background: #fff;
+  font-size: 13px;
+}
+
+.live-funding-note {
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.live-map-shell {
+  position: relative;
+}
+
+.project-brand img {
+  display: block;
+}
+
+@media (max-width: 600px) {
+  .live-action-row {
+    display: grid;
+  }
+
+  .live-message-form .stage-action {
+    width: 100%;
+  }
+}

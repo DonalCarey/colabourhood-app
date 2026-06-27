@@ -436,10 +436,10 @@ function renderDrawer() {
       Open project
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
     </a>`
-    : `<button class="button open-project-button" type="button" disabled>
-      Project page coming next
+    : `<a class="button open-project-button" href="./live-project.html?id=${encodeURIComponent(project.id)}">
+      Open project
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
-    </button>`;
+    </a>`;
   drawer.style.setProperty("--status", status.color);
   drawer.innerHTML = `
     <div class="drawer-topline">
