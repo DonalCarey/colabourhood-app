@@ -654,6 +654,24 @@ function openAccountModal() {
   if (!currentUser) accountForm.querySelector('[name="email"]').focus();
 }
 
+function authRedirectUrl() {
+  return `${window.location.origin}${window.location.pathname}`;
+}
+
+async function resendSignupConfirmation(email) {
+  if (!supabaseClient || !email) return;
+
+  const { error } = await supabaseClient.auth.resend({
+    type: "signup",
+    email,
+    options: {
+      emailRedirectTo: authRedirectUrl(),
+    },
+  });
+
+  if (error) throw error;
+}
+
 function pendingIcon() {
   return L.divIcon({
     className: "project-marker-shell",
@@ -816,6 +834,7 @@ accountForm.addEventListener("submit", async (event) => {
       email,
       password,
       options: {
+        emailRedirectTo: authRedirectUrl(),
         data: {
           display_name: displayName,
           neighbourhood_id: neighbourhoodId,
@@ -844,7 +863,16 @@ accountForm.addEventListener("submit", async (event) => {
   } else {
     const { data: signinData, error } = await supabaseClient.auth.signInWithPassword({ email, password });
     if (error) {
-      showToast(error.message);
+      if (error.message?.toLowerCase().includes("email not confirmed")) {
+        try {
+          await resendSignupConfirmation(email);
+          showToast("Email not confirmed. We sent a fresh confirmation link.");
+        } catch (resendError) {
+          showToast(resendError.message || "Email not confirmed. Please request a new confirmation email.");
+        }
+      } else {
+        showToast(error.message);
+      }
     } else {
       currentUser = signinData.user;
       currentProfile = await loadProfile(currentUser.id);
