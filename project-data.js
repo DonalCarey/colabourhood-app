@@ -114,7 +114,7 @@ window.COLABOURHOOD_PROJECTS = {
     status: "Gathering support",
     statusKey: "gathering",
     scope: "neighbourhood",
-    location: "Across Ballinacurra Gardens",
+    location: "Across Ballinacurra Gardens, Oakview Drive, Greenfields & Roundwood Estate",
     organiser: "Eoin Walsh and 2 neighbours",
     objective: "Help interested households compare options and negotiate a better group price.",
     description: "This neighbourhood-wide project will pool demand, invite comparable installer quotes and share practical information on insulation and energy upgrades.",

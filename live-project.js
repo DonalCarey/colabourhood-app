@@ -70,8 +70,14 @@ function projectScope(row) {
 
 function projectLocationLabel() {
   if (!project) return "";
-  if (projectScope(project) === "neighbourhood") return `Across ${neighbourhood?.name || "the neighbourhood"}`;
-  return project.location_label || neighbourhood?.name || "Mapped location";
+  if (projectScope(project) === "neighbourhood") return `Across ${displayNeighbourhoodName(neighbourhood?.name) || "the neighbourhood"}`;
+  return project.location_label || displayNeighbourhoodName(neighbourhood?.name) || "Mapped location";
+}
+
+function displayNeighbourhoodName(name = "") {
+  return name === "Ballinacurra Gardens"
+    ? "Ballinacurra Gardens, Oakview Drive, Greenfields & Roundwood Estate"
+    : name;
 }
 
 function contributionCount(type) {
@@ -317,7 +323,7 @@ function render() {
               <div id="project-mini-map" class="live-map-shell"></div>
               <div>
                 <strong>${escapeHtml(scope === "neighbourhood" ? "Neighbourhood-wide project" : projectLocationLabel())}</strong>
-                <p>${scope === "neighbourhood" ? `This project applies across ${escapeHtml(neighbourhood?.name || "the neighbourhood")}.` : "The mapped point shows the place this project is focused on."}</p>
+                <p>${scope === "neighbourhood" ? `This project applies across ${escapeHtml(displayNeighbourhoodName(neighbourhood?.name) || "the neighbourhood")}.` : "The mapped point shows the place this project is focused on."}</p>
               </div>
             </div>
           </section>
@@ -664,7 +670,7 @@ function initialiseMap() {
       fillOpacity: 1,
     }).addTo(miniMap);
   } else {
-    const centre = [Number(neighbourhood?.centre_lat || 52.6454687), Number(neighbourhood?.centre_lng || -8.6362558)];
+    const centre = [Number(neighbourhood?.centre_lat || 52.64565), Number(neighbourhood?.centre_lng || -8.63435)];
     miniMap.setView(centre, 15);
     L.circle(centre, {
       radius: 450,

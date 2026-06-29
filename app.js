@@ -5,13 +5,14 @@ const STATUS = {
   completed: { label: "Completed", color: "#235b49" },
 };
 
-const NEIGHBOURHOOD_CENTER = [52.6454687, -8.6362558];
+const NEIGHBOURHOOD_CENTER = [52.64565, -8.63435];
 const NEIGHBOURHOOD_BOUNDS = [
-  [52.6432195, -8.6386079],
-  [52.6477796, -8.6313332],
+  [52.64275, -8.6396],
+  [52.64845, -8.62885],
 ];
 const TILE_URL = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
-const PILOT_NEIGHBOURHOOD_NAME = "Ballinacurra Gardens";
+const PILOT_NEIGHBOURHOOD_NAME = "Ballinacurra Gardens, Oakview Drive, Greenfields & Roundwood Estate";
+const LEGACY_PILOT_NEIGHBOURHOOD_NAME = "Ballinacurra Gardens";
 
 const DEMO_PROJECTS = [
   {
@@ -76,7 +77,7 @@ const DEMO_PROJECTS = [
     scope: "neighbourhood",
     title: "Bulk-buy home energy upgrades",
     shortTitle: "Energy upgrade group",
-    location: "Across Ballinacurra Gardens",
+    location: `Across ${PILOT_NEIGHBOURHOOD_NAME}`,
     status: "gathering",
     neighbours: 18,
     description:
@@ -100,7 +101,7 @@ let neighbourhoods = [];
 
 const supabaseClient = window.COLABOURHOOD_SUPABASE;
 const FALLBACK_NEIGHBOURHOODS = [
-  { id: "", name: "Ballinacurra Gardens" },
+  { id: "", name: PILOT_NEIGHBOURHOOD_NAME },
   { id: "", name: "Corbally" },
   { id: "", name: "Castletroy" },
   { id: "", name: "Dooradoyle" },
@@ -203,13 +204,21 @@ function shortTitle(title) {
 function activeNeighbourhood() {
   return (
     neighbourhoods.find((neighbourhood) => neighbourhood.id === currentProfile?.neighbourhood_id) ||
-    neighbourhoods.find((neighbourhood) => neighbourhood.name === PILOT_NEIGHBOURHOOD_NAME) ||
+    neighbourhoods.find((neighbourhood) => isPilotNeighbourhoodName(neighbourhood.name)) ||
     null
   );
 }
 
+function isPilotNeighbourhoodName(name = "") {
+  return name === PILOT_NEIGHBOURHOOD_NAME || name === LEGACY_PILOT_NEIGHBOURHOOD_NAME;
+}
+
+function displayNeighbourhoodName(name = "") {
+  return isPilotNeighbourhoodName(name) ? PILOT_NEIGHBOURHOOD_NAME : name;
+}
+
 function activeNeighbourhoodName() {
-  return activeNeighbourhood()?.name || PILOT_NEIGHBOURHOOD_NAME;
+  return displayNeighbourhoodName(activeNeighbourhood()?.name) || PILOT_NEIGHBOURHOOD_NAME;
 }
 
 function liveProjectFromRow(row, supportCount = 0) {
@@ -235,8 +244,8 @@ function liveProjectFromRow(row, supportCount = 0) {
 }
 
 function syncProjectCollection() {
-  const neighbourhood = activeNeighbourhoodName();
-  const demoProjects = neighbourhood === PILOT_NEIGHBOURHOOD_NAME ? DEMO_PROJECTS : [];
+  const neighbourhood = activeNeighbourhood();
+  const demoProjects = isPilotNeighbourhoodName(neighbourhood?.name) ? DEMO_PROJECTS : [];
   projects = [...demoProjects, ...liveProjects];
 
   const projectIds = new Set(projects.map((project) => project.id));
@@ -566,14 +575,14 @@ function friendlyVerificationStatus(status) {
 }
 
 function neighbourhoodName(id) {
-  return neighbourhoods.find((neighbourhood) => neighbourhood.id === id)?.name || "Neighbourhood not selected";
+  return displayNeighbourhoodName(neighbourhoods.find((neighbourhood) => neighbourhood.id === id)?.name) || "Neighbourhood not selected";
 }
 
 function renderNeighbourhoodOptions() {
   const options = neighbourhoods.length ? neighbourhoods : FALLBACK_NEIGHBOURHOODS;
   neighbourhoodSelect.innerHTML = [
-    `<option value="">Choose a Limerick neighbourhood</option>`,
-    ...options.map((neighbourhood) => `<option value="${neighbourhood.id}">${neighbourhood.name}</option>`),
+    `<option value="">Choose a Limerick pilot area</option>`,
+    ...options.map((neighbourhood) => `<option value="${neighbourhood.id}">${displayNeighbourhoodName(neighbourhood.name)}</option>`),
   ].join("");
 }
 
@@ -973,7 +982,7 @@ form.addEventListener("submit", async (event) => {
     scope: proposalScope,
     title,
     shortTitle: title.length > 22 ? `${title.slice(0, 21)}…` : title,
-    location: proposalScope === "neighbourhood" ? "Across Ballinacurra Gardens" : "Ballinacurra Gardens",
+    location: proposalScope === "neighbourhood" ? `Across ${PILOT_NEIGHBOURHOOD_NAME}` : PILOT_NEIGHBOURHOOD_NAME,
     status: "proposed",
     neighbours: 1,
     description,

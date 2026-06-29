@@ -3,7 +3,7 @@
 
 insert into public.neighbourhoods (name, city, country, centre_lat, centre_lng)
 values
-  ('Ballinacurra Gardens', 'Limerick', 'Ireland', 52.646900, -8.641900),
+  ('Ballinacurra Gardens, Oakview Drive, Greenfields & Roundwood Estate', 'Limerick', 'Ireland', 52.645650, -8.634350),
   ('Corbally', 'Limerick', 'Ireland', 52.674900, -8.603300),
   ('Castletroy', 'Limerick', 'Ireland', 52.666000, -8.553000),
   ('Dooradoyle', 'Limerick', 'Ireland', 52.637600, -8.645900),

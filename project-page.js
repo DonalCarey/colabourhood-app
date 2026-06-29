@@ -76,7 +76,7 @@ function render() {
               </div>
             </div>
             <div class="why-block"><h3>Why this matters</h3><p>${project.why}</p></div>
-            <div class="project-map-block"><div id="project-mini-map"></div><div><strong>${project.scope === "neighbourhood" ? "Neighbourhood-wide" : project.location}</strong><p>${project.scope === "neighbourhood" ? "This project applies across Ballinacurra Gardens rather than to a single pin." : "The mapped point shows the place this project is focused on."}</p></div></div>
+            <div class="project-map-block"><div id="project-mini-map"></div><div><strong>${project.scope === "neighbourhood" ? "Neighbourhood-wide" : project.location}</strong><p>${project.scope === "neighbourhood" ? "This project applies across the pilot area rather than to a single pin." : "The mapped point shows the place this project is focused on."}</p></div></div>
           </section>
 
           <section id="action-plan" class="page-section ruled-section">
