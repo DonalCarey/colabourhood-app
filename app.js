@@ -131,6 +131,7 @@ const neighbourhoodSelect = document.querySelector("#neighbourhood-select");
 const signedInPanel = document.querySelector("#signed-in-panel");
 const signedInName = document.querySelector("#signed-in-name");
 const signedInMeta = document.querySelector("#signed-in-meta");
+const accountAdminLink = document.querySelector("#account-admin-link");
 const markers = new Map();
 
 const map = L.map("leaflet-map", {
@@ -599,7 +600,7 @@ async function loadProfile(userId) {
   if (!supabaseClient || !userId) return null;
   const { data, error } = await supabaseClient
     .from("profiles")
-    .select("id, display_name, neighbourhood_id, verification_status")
+    .select("id, display_name, neighbourhood_id, verification_status, is_admin")
     .eq("id", userId)
     .single();
 
@@ -614,6 +615,7 @@ function renderAccountState() {
   const isSignedIn = Boolean(currentUser);
   accountForm.hidden = isSignedIn;
   signedInPanel.hidden = !isSignedIn;
+  if (accountAdminLink) accountAdminLink.hidden = !currentProfile?.is_admin;
 
   if (isSignedIn) {
     signedInName.textContent = currentProfile?.display_name || currentUser.email;

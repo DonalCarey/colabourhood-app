@@ -271,7 +271,7 @@ function render() {
       <a class="project-brand" href="./index.html" aria-label="Colabourhood home">
         <img src="./assets/brand/colabourhood-logo.png" alt="Colabourhood">
       </a>
-      <nav><a href="./index.html">Map</a><a class="active" href="./index.html#projects">Projects</a><a href="./index.html#neighbourhood">Neighbourhood</a></nav>
+      <nav><a href="./index.html">Map</a><a class="active" href="./index.html#projects">Projects</a><a href="./index.html#neighbourhood">Neighbourhood</a><a href="./rules.html">Rules</a><a href="./admin.html">Admin</a></nav>
       <a class="header-map-link" href="./index.html">${icon("pin")}Back to map</a>
     </header>
 
@@ -348,6 +348,11 @@ function render() {
 
           <section id="updates" class="page-section ruled-section">
             <div class="section-heading"><div><h2>Updates</h2><p>A durable record of comments, progress and decisions.</p></div></div>
+            <div class="live-safety-strip">
+              <strong>Keep updates neighbour-safe.</strong>
+              <span>Do not post private addresses, phone numbers, bills, car registrations or photos of people without consent. If something looks unsafe, use Report.</span>
+              <a href="./rules.html">Community rules</a>
+            </div>
             <form class="live-message-form" id="message-form">
               <label for="message-body">Add a comment or update</label>
               <textarea id="message-body" name="body" required placeholder="Share a useful update, offer context, or suggest a next step."></textarea>
@@ -362,7 +367,7 @@ function render() {
           ${renderOrganiserTools()}
           <div class="side-block"><span>Ways to contribute</span><div class="help-options">${["Time", "Skills", "Tools", "Funds"].map(type => `<button data-help="${type}">${type}</button>`).join("")}</div></div>
           <div class="side-block privacy-note"><span>Neighbour privacy</span><p>Support can be counted without showing personal details publicly.</p></div>
-          <div class="side-block"><span>Safety</span><p>If this project contains private information, abusive content, spam, or an unsafe proposal, report it for review.</p><button class="secondary-action" data-report-type="project" data-report-id="${project.id}">Report project</button></div>
+          <div class="side-block"><span>Safety</span><p>If this project contains private information, abusive content, spam, or an unsafe proposal, report it for review.</p><a class="side-text-link" href="./rules.html">Community rules</a><button class="secondary-action" data-report-type="project" data-report-id="${project.id}">Report project</button></div>
         </aside>
       </div>
     </main>
@@ -480,6 +485,14 @@ function renderEditorModal() {
 
           <div class="editor-subsection">
             <h3>Photos</h3>
+            <div class="upload-privacy-check">
+              <strong>Before uploading</strong>
+              <ul>
+                <li>Avoid children’s faces unless you have clear consent.</li>
+                <li>Crop out house numbers, car registrations and private documents.</li>
+                <li>Use photos to explain the project, not to identify neighbours.</li>
+              </ul>
+            </div>
             <label>Upload photos<input name="media" type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple></label>
             <label>Caption for new photos<input name="caption" placeholder="e.g. Current condition of the green"></label>
             <p class="live-funding-note">For now we accept photos only. Keep people’s private addresses and children out of frame unless you have consent.</p>
@@ -544,7 +557,7 @@ function renderReportModal() {
       <section class="project-dialog">
         <button class="dialog-close" aria-label="Close">×</button>
         <h2>Report content</h2>
-        <p>Reports help keep Colabourhood safe for neighbours. Admins can review and hide content if needed.</p>
+        <p>Reports help keep Colabourhood safe for neighbours. Admins can review and hide content if needed. You can also read the <a href="./rules.html">community rules</a>.</p>
         <form id="report-form" class="live-report-form">
           <label>Reason
             <select name="reason" required>

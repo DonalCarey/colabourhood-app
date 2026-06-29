@@ -29,6 +29,8 @@
           <a class="active" href="#map">Map</a>
           <a href="#projects">Projects</a>
           <a href="#neighbourhood">Neighbourhood</a>
+          <a href="./rules.html">Rules</a>
+          <a href="./admin.html">Admin</a>
         </nav>
 
         <button class="account-button" id="account-button" type="button">
@@ -50,6 +52,16 @@
             <p class="location">Ballinacurra Gardens</p>
             <h1>What could we change here?</h1>
             <p>Select a project, or choose a place to start one.</p>
+          </div>
+
+          <div class="beta-guide" aria-label="How Colabourhood works">
+            <strong>First neighbour beta</strong>
+            <ol>
+              <li>Pick a place or neighbourhood-wide idea.</li>
+              <li>Neighbours support it, offer help, or add context.</li>
+              <li>Admins can review reports so the map stays useful.</li>
+            </ol>
+            <a href="./rules.html">Read the community rules</a>
           </div>
 
           <div class="filters" aria-label="Project status filters">
@@ -98,6 +110,7 @@
         <p class="modal-step">New project</p>
         <h2 id="scope-title">Where does this idea apply?</h2>
         <p class="scope-intro">Projects can belong to a particular place or to everyone across Ballinacurra Gardens.</p>
+        <p class="safety-note">Keep proposals practical, respectful and safe. Do not include private addresses, phone numbers, documents, or photos of people without consent.</p>
         <div class="scope-options">
           <button class="scope-option" id="scope-place">
             <span class="scope-icon">
@@ -133,6 +146,9 @@
             What should change?
             <textarea name="description" required rows="4" placeholder="Describe the outcome you want neighbours to create together."></textarea>
           </label>
+          <p class="privacy-note">
+            Before posting, check that your proposal does not reveal someone else’s private information. You can add photos and a fuller action plan later from the project page.
+          </p>
           <div class="form-actions">
             <button type="button" class="button button-light" id="modal-back">Change project type</button>
             <button type="submit" class="button button-dark">Continue</button>
@@ -177,6 +193,9 @@
           <p class="privacy-note" data-signup-only>
             Your exact address is not shown. Utility bills or proof-of-address documents should only be requested later if verification is needed.
           </p>
+          <p class="privacy-note account-rules-note">
+            By joining, please follow the <a href="./rules.html">community rules</a>: be respectful, protect privacy, and report unsafe or abusive content.
+          </p>
           <div class="form-actions">
             <button type="submit" class="button button-dark" id="account-submit">Create account</button>
           </div>
@@ -185,6 +204,10 @@
         <div class="signed-in-panel" id="signed-in-panel" hidden>
           <p class="signed-in-name" id="signed-in-name"></p>
           <p class="signed-in-meta" id="signed-in-meta"></p>
+          <div class="signed-in-links">
+            <a href="./rules.html">Community rules</a>
+            <a href="./admin.html" id="account-admin-link">Admin dashboard</a>
+          </div>
           <button class="button button-light" id="sign-out-button" type="button">Sign out</button>
         </div>
       </section>
