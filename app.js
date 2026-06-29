@@ -132,7 +132,11 @@ const signedInPanel = document.querySelector("#signed-in-panel");
 const signedInName = document.querySelector("#signed-in-name");
 const signedInMeta = document.querySelector("#signed-in-meta");
 const accountAdminLink = document.querySelector("#account-admin-link");
+const welcomeModal = document.querySelector("#welcome-modal");
+const welcomeClose = document.querySelector("#welcome-close");
+const welcomeStart = document.querySelector("#welcome-start");
 const markers = new Map();
+const WELCOME_SEEN_KEY = "colabourhood-welcome-seen-v1";
 
 const map = L.map("leaflet-map", {
   zoomControl: true,
@@ -638,6 +642,18 @@ function setAuthMode(mode) {
     mode === "signup" ? "new-password" : "current-password";
 }
 
+function showWelcomeModalIfNeeded() {
+  if (!welcomeModal) return;
+  if (localStorage.getItem(WELCOME_SEEN_KEY) === "true") return;
+  welcomeModal.hidden = false;
+}
+
+function dismissWelcomeModal() {
+  if (!welcomeModal) return;
+  localStorage.setItem(WELCOME_SEEN_KEY, "true");
+  welcomeModal.hidden = true;
+}
+
 async function refreshSession() {
   if (!supabaseClient) {
     renderAccountState();
@@ -794,6 +810,8 @@ document.querySelector("#modal-close").addEventListener("click", () => {
 document.querySelector("#modal-back").addEventListener("click", openScopeChoice);
 document.querySelector("#account-button").addEventListener("click", openAccountModal);
 document.querySelector("#account-close").addEventListener("click", () => (accountModal.hidden = true));
+welcomeClose?.addEventListener("click", dismissWelcomeModal);
+welcomeStart?.addEventListener("click", dismissWelcomeModal);
 document.querySelector("#sign-out-button").addEventListener("click", async () => {
   if (!supabaseClient) return;
   await supabaseClient.auth.signOut();
@@ -986,6 +1004,7 @@ document.addEventListener("keydown", (event) => {
     scopeModal.hidden = true;
     modal.hidden = true;
     accountModal.hidden = true;
+    dismissWelcomeModal();
     cancelLocationChoice();
   }
 });
@@ -1004,6 +1023,7 @@ async function initApp() {
   await loadNeighbourhoods();
   await refreshSession();
   await loadLiveProjects();
+  showWelcomeModalIfNeeded();
   if (supabaseClient) {
     supabaseClient.auth.onAuthStateChange(async (_event, session) => {
       currentUser = session?.user || null;

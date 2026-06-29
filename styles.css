@@ -298,6 +298,65 @@ input:focus, textarea:focus, select:focus { border-color: var(--green); box-shad
 .scope-icon { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 50%; color: white; background: var(--coral); }
 .scope-icon.neighbourhood-icon { background: var(--green); border-radius: 11px; }
 .scope-icon svg { width: 24px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.welcome-backdrop { z-index: 80; }
+.welcome-modal {
+  width: min(720px, 100%);
+  max-height: calc(100dvh - 40px);
+  overflow: auto;
+}
+.welcome-intro {
+  margin: 12px 0 20px;
+  color: #435a53;
+  font-size: 15px;
+  line-height: 1.6;
+}
+.welcome-flow {
+  display: grid;
+  gap: 10px;
+  margin: 20px 0;
+}
+.welcome-flow article {
+  display: grid;
+  grid-template-columns: 38px 1fr;
+  gap: 13px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #f7faf5;
+}
+.welcome-flow span {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: white;
+  background: var(--green);
+  font-size: 13px;
+  font-weight: 800;
+}
+.welcome-flow strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 14px;
+}
+.welcome-flow p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.welcome-privacy-note {
+  padding: 13px 14px;
+  border-left: 4px solid var(--coral);
+  color: #6b4b41;
+  background: #fbede9;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.welcome-actions a {
+  text-decoration: none;
+}
 .toast { position: fixed; z-index: 70; left: 50%; bottom: 24px; transform: translateX(-50%); padding: 12px 17px; border-radius: 8px; color: white; background: var(--ink); box-shadow: var(--shadow); font-size: 13px; font-weight: 700; }
 .toast[hidden] { display: none; }
 
@@ -387,4 +446,15 @@ input:focus, textarea:focus, select:focus { border-color: var(--green); box-shad
   .neighbourhood-project-button .area-symbol { width: 30px; height: 30px; }
   .map-legend { display: none; }
   .location-banner { width: calc(100% - 94px); justify-content: space-between; left: 12px; transform: none; }
+  .welcome-modal { padding: 26px 22px; }
+  .welcome-flow article { grid-template-columns: 32px 1fr; padding: 12px; }
+  .welcome-flow span { width: 30px; height: 30px; }
+  .welcome-actions {
+    position: sticky;
+    bottom: -26px;
+    display: grid;
+    padding: 12px 0 0;
+    background: linear-gradient(rgba(255,255,255,0), #fff 18%, #fff);
+  }
+  .welcome-actions .button { width: 100%; }
 }
