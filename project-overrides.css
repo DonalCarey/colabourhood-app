@@ -1,0 +1,25 @@
+.media-gallery {
+  margin-bottom: 54px;
+  overflow: hidden;
+}
+
+.media-gallery button,
+.media-gallery img {
+  display: block;
+}
+
+.why-block {
+  clear: both;
+  margin-top: 0;
+  padding-top: 34px;
+}
+
+@media (max-width: 600px) {
+  .media-gallery {
+    margin-bottom: 38px;
+  }
+
+  .why-block {
+    padding-top: 28px;
+  }
+}
