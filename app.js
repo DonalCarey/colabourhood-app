@@ -21,67 +21,39 @@ const DEMO_PROJECTS = [
     scope: "place",
     title: "A safer crossing on Ballinacurra Gardens",
     shortTitle: "Safer crossing",
-    location: "Ballinacurra Gardens",
+    location: "Ballinacurra Gardens near the green",
     status: "gathering",
     neighbours: 34,
     description:
-      "A resident-led plan for a safer place to cross, with local observations, design options and a shared budget.",
+      "Gather observations, compare low-cost options and agree a practical resident-backed crossing improvement.",
     lat: 52.64512,
     lng: -8.63546,
   },
   {
     id: "demo-2",
-    slug: "community-tool-library",
+    slug: "greenfields-oakview-planting-tidy-up",
     scope: "place",
-    title: "Community tool library",
-    shortTitle: "Tool library",
-    location: "Near the community green",
+    title: "Greenfields and Oakview planting tidy-up",
+    shortTitle: "Planting tidy-up",
+    location: "Greenfields / Oakview Drive shared green edge",
     status: "ready",
-    neighbours: 21,
+    neighbours: 27,
     description:
-      "A shared store of useful garden and household tools, maintained and booked by neighbours.",
-    lat: 52.64637,
-    lng: -8.63438,
+      "Prepare a shared green edge, plant hardy low-maintenance shrubs and organise a short watering rota.",
+    lat: 52.64628,
+    lng: -8.63192,
   },
   {
     id: "demo-3",
-    slug: "spring-street-clean-up",
-    scope: "place",
-    title: "Spring street clean-up",
-    shortTitle: "Street clean-up",
-    location: "Southern end of Ballinacurra Gardens",
-    status: "completed",
-    neighbours: 46,
-    description:
-      "A coordinated morning to clear litter, trim shared edges and make the neighbourhood welcoming again.",
-    lat: 52.64389,
-    lng: -8.63672,
-  },
-  {
-    id: "demo-4",
-    slug: "play-space-for-younger-children",
-    scope: "place",
-    title: "A play space for younger children",
-    shortTitle: "Play space",
-    location: "The neighbourhood green",
-    status: "proposed",
-    neighbours: 12,
-    description:
-      "Explore a modest, safe play area shaped and funded by families living around the green.",
-    lat: 52.64682,
-    lng: -8.63712,
-  },
-  {
-    id: "demo-5",
-    slug: "bulk-buy-home-energy-upgrades",
+    slug: "community-tool-library",
     scope: "neighbourhood",
-    title: "Bulk-buy home energy upgrades",
-    shortTitle: "Energy upgrade group",
+    title: "Community tool library",
+    shortTitle: "Tool library",
     location: `Across ${PILOT_NEIGHBOURHOOD_NAME}`,
-    status: "gathering",
-    neighbours: 18,
+    status: "proposed",
+    neighbours: 22,
     description:
-      "Bring interested households together to compare options, invite installers to quote and negotiate a better group price.",
+      "Build a small shared inventory of household and garden tools that neighbours can borrow.",
   },
 ];
 
@@ -197,6 +169,21 @@ function typeFromScope(scope) {
   return scope === "neighbourhood" ? "neighbourhood_wide" : "location_based";
 }
 
+function isObviousTestProjectRow(row) {
+  const title = (row.title || "").trim().toLowerCase();
+  const summary = (row.summary || "").trim().toLowerCase();
+  const description = (row.description || "").trim().toLowerCase();
+
+  return (
+    title === "test" ||
+    title === "garden tidy" ||
+    summary === "this is a test" ||
+    summary === "cut the garden grass" ||
+    description.includes("this is a test") ||
+    description.includes("cut the garden grass")
+  );
+}
+
 function shortTitle(title) {
   return title.length > 22 ? `${title.slice(0, 21)}…` : title;
 }
@@ -283,7 +270,7 @@ async function loadLiveProjects() {
     return;
   }
 
-  const rows = data || [];
+  const rows = (data || []).filter((row) => !isObviousTestProjectRow(row));
   const ids = rows.map((row) => row.id);
   let supportCounts = new Map();
 

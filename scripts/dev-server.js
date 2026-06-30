@@ -8,6 +8,8 @@ const port = Number(process.env.PORT || 4173);
 const contentTypes = {
   ".css": "text/css; charset=utf-8",
   ".html": "text/html; charset=utf-8",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
   ".js": "text/javascript; charset=utf-8",
   ".json": "application/json; charset=utf-8",
   ".png": "image/png",
@@ -26,16 +28,20 @@ const server = http.createServer((request, response) => {
   }
 
   fs.stat(filePath, (statError, stat) => {
-    if (statError || !stat.isFile()) {
+    const resolvedFilePath = !statError && stat.isDirectory() ? path.join(filePath, "index.html") : filePath;
+
+    fs.stat(resolvedFilePath, (resolvedStatError, resolvedStat) => {
+      if (resolvedStatError || !resolvedStat.isFile()) {
       response.writeHead(404);
       response.end("Not found");
       return;
-    }
+      }
 
-    response.writeHead(200, {
-      "Content-Type": contentTypes[path.extname(filePath)] || "application/octet-stream",
+      response.writeHead(200, {
+        "Content-Type": contentTypes[path.extname(resolvedFilePath)] || "application/octet-stream",
+      });
+      fs.createReadStream(resolvedFilePath).pipe(response);
     });
-    fs.createReadStream(filePath).pipe(response);
   });
 });
 
